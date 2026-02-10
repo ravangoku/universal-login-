@@ -1,11 +1,11 @@
-import os
-import json
-import csv
-import io
-from datetime import datetime
 from flask import Flask, request, jsonify, send_file, Response
 from flask_cors import CORS
-from werkzeug.exceptions import HTTPException
+from datetime import datetime
+import json
+import os
+import csv
+import secrets
+import io
 
 app = Flask(__name__)
 # Enable CORS for all roots and all origins
@@ -16,64 +16,47 @@ CORS(app, resources={r"/api/*": {"origins": "*"}}, supports_credentials=True)
 # ===============================
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 LOGS_FILE = os.path.join(BASE_DIR, "logs.json")
+KEYS_FILE = os.path.join(BASE_DIR, "api_keys.json")
+EXPORT_DIR = os.path.join(BASE_DIR, "exports")
 
-API_KEY = "uls_demo_key_12345"
 API_HEADER = "X-API-KEY"
-
-# ===============================
-# ERROR HANDLERS (JSON ONLY)
-# ===============================
-@app.errorhandler(Exception)
-def handle_exception(e):
-    """Handle all exceptions and return JSON instead of HTML."""
-    if isinstance(e, HTTPException):
-        return jsonify({
-            "status": "error",
-            "message": e.description
-        }), e.code
-    return jsonify({
-        "status": "error",
-        "message": "Internal Server Error"
-    }), 500
-
-@app.errorhandler(404)
-def resource_not_found(e):
-    return jsonify({
-        "status": "error", 
-        "message": "The requested URL was not found on the server."
-    }), 404
 
 # ===============================
 # HELPERS
 # ===============================
-def ensure_logs_file():
-    """Create logs.json if it doesn't exist."""
+def ensure_files():
+    """Create data files and directories if they don't exist."""
     if not os.path.exists(LOGS_FILE):
         with open(LOGS_FILE, "w") as f:
             json.dump([], f)
+    if not os.path.exists(KEYS_FILE):
+        with open(KEYS_FILE, "w") as f:
+            json.dump([], f)
+    if not os.path.exists(EXPORT_DIR):
+        os.makedirs(EXPORT_DIR)
 
-def load_logs():
-    """Load logs from file safely."""
-    ensure_logs_file()
+def load_data(path):
+    """Load JSON data from file safely."""
+    ensure_files()
     try:
-        with open(LOGS_FILE, "r") as f:
-            data = json.load(f)
-            return data if isinstance(data, list) else []
+        with open(path, "r") as f:
+            return json.load(f)
     except (json.JSONDecodeError, IOError):
         return []
 
-def save_logs(logs):
-    """Save logs to file safely."""
+def save_data(path, data):
+    """Save JSON data to file safely."""
     try:
-        with open(LOGS_FILE, "w") as f:
-            json.dump(logs, f, indent=2)
+        with open(path, "w") as f:
+            json.dump(data, f, indent=2)
     except IOError:
         pass
 
 def validate_api_key():
-    """Check if X-API-KEY header matches the expected value."""
+    """Check if X-API-KEY header matches a generated key."""
     key = request.headers.get(API_HEADER)
-    if key != API_KEY:
+    keys = load_data(KEYS_FILE)
+    if not key or key not in keys:
         return False
     return True
 
@@ -81,9 +64,21 @@ def validate_api_key():
 # ROUTES
 # ===============================
 
+@app.route("/api/key/generate", methods=["POST"])
+def generate_key():
+    """Generate a new API key."""
+    new_key = "uls_" + secrets.token_hex(16)
+    keys = load_data(KEYS_FILE)
+    keys.append(new_key)
+    save_data(KEYS_FILE, keys)
+    return jsonify({
+        "status": "success",
+        "api_key": new_key
+    }), 201
+
 @app.route("/api/health", methods=["GET"])
 def health():
-    """Health check endpoint (no API key required)."""
+    """Health check endpoint."""
     return jsonify({
         "status": "success",
         "message": "API running"
@@ -93,20 +88,20 @@ def health():
 def get_logs():
     """Retrieve all logs (requires API key)."""
     if not validate_api_key():
-        return jsonify({"status": "error", "message": "Invalid API key"}), 401
+        return jsonify({"status": "error", "message": "Invalid or missing API key"}), 401
 
-    logs = load_logs()
+    logs = load_data(LOGS_FILE)
     
     # Optional sorting: latest logs first
     try:
         logs.sort(key=lambda x: x.get('timestamp', ''), reverse=True)
-    except Exception:
+    except:
         pass
 
     return jsonify({
         "status": "success",
         "logs": logs,
-        "results": logs,  # For frontend compatibility
+        "results": logs,  # Compatibility
         "count": len(logs)
     }), 200
 
@@ -114,11 +109,10 @@ def get_logs():
 def submit_log():
     """Add a new log entry (requires API key)."""
     if not validate_api_key():
-        return jsonify({"status": "error", "message": "Invalid API key"}), 401
+        return jsonify({"status": "error", "message": "Invalid or missing API key"}), 401
 
     data = request.get_json(silent=True) or {}
     
-    # Map both frontend schemas to the stored schema
     log_entry = {
         "timestamp": data.get("timestamp") or datetime.now().isoformat(),
         "service": data.get("service") or data.get("service_name") or "Unknown",
@@ -128,9 +122,9 @@ def submit_log():
         "trace_id": data.get("trace_id", "")
     }
 
-    logs = load_logs()
+    logs = load_data(LOGS_FILE)
     logs.append(log_entry)
-    save_logs(logs)
+    save_data(LOGS_FILE, logs)
 
     return jsonify({
         "status": "success",
@@ -138,55 +132,63 @@ def submit_log():
         "log": log_entry
     }), 201
 
-# -------- CSV EXPORT ROUTES --------
 @app.route("/api/logs/export", methods=["GET"])
-@app.route("/api/logs/export-csv", methods=["GET"])
-@app.route("/api/logs/export/csv", methods=["GET"])
-@app.route("/api/logs/csv", methods=["GET"])
-def export_logs():
-    """Export all logs to a CSV file (requires API key)."""
+def export_logs_csv():
+    """Export all logs to CSV, save on server, and download."""
     if not validate_api_key():
         return jsonify({"status": "error", "message": "Invalid API key"}), 401
 
-    logs = load_logs()
+    logs = load_data(LOGS_FILE)
+    if not logs:
+        return jsonify({"status": "error", "message": "No logs to export"}), 400
+
+    # Ensure export directory exists
+    os.makedirs(EXPORT_DIR, exist_ok=True)
     
-    output = io.StringIO()
-    writer = csv.DictWriter(
-        output, 
-        fieldnames=["timestamp", "service", "level", "message", "server", "trace_id"]
-    )
-    writer.writeheader()
-    writer.writerows(logs)
-    
-    output.seek(0)
-    return Response(
-        output.getvalue(),
+    # Generate unique filename for server-side storage
+    filename = f"logs_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+    server_path = os.path.join(EXPORT_DIR, filename)
+
+    # Write CSV to server file
+    try:
+        with open(server_path, "w", newline="", encoding="utf-8") as f:
+            writer = csv.DictWriter(
+                f,
+                fieldnames=["timestamp", "service", "level", "message", "server", "trace_id"]
+            )
+            writer.writeheader()
+            writer.writerows(logs)
+    except IOError as e:
+        return jsonify({"status": "error", "message": f"Failed to save CSV: {str(e)}"}), 500
+
+    # Return CSV as downloadable response
+    return send_file(
+        server_path,
         mimetype="text/csv",
-        headers={"Content-disposition": "attachment; filename=logs.csv"}
+        as_attachment=True,
+        download_name="logs.csv"
     )
 
 @app.route("/api/logs/clear", methods=["POST"])
 def clear_logs():
     """Clear all stored logs (requires API key)."""
     if not validate_api_key():
-        return jsonify({"status": "error", "message": "Invalid API key"}), 401
+        return jsonify({"status": "error", "message": "Invalid or missing API key"}), 401
 
-    save_logs([])
+    save_data(LOGS_FILE, [])
     return jsonify({
         "status": "success", 
         "message": "Logs cleared"
     }), 200
 
 # ===============================
-# START SERVER
+# MAIN
 # ===============================
 if __name__ == "__main__":
-    ensure_logs_file()
+    ensure_files()
     print("====================================")
     print("  Universal Logging System Backend  ")
     print("====================================")
     print("API URL : http://localhost:5000")
-    print("API KEY :", API_KEY)
     print("====================================")
-    # Host 0.0.0.0 is critical for accessibility in some environments
     app.run(host="0.0.0.0", port=5000, debug=True)

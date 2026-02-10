@@ -1,1 +1,178 @@
-[]
+[
+  {
+    "timestamp": "2026-02-10T09:00:01",
+    "service": "AuthService",
+    "message": "Application started",
+    "level": "INFO",
+    "server": "Server-1",
+    "trace_id": "TRX001"
+  },
+  {
+    "timestamp": "2026-02-10T09:02:15",
+    "service": "AuthService",
+    "message": "User login successful",
+    "level": "INFO",
+    "server": "Server-1",
+    "trace_id": "TRX002"
+  },
+  {
+    "timestamp": "2026-02-10T09:05:40",
+    "service": "AuthService",
+    "message": "Invalid password attempt",
+    "level": "WARNING",
+    "server": "Server-1",
+    "trace_id": "TRX003"
+  },
+  {
+    "timestamp": "2026-02-10T09:08:10",
+    "service": "UserService",
+    "message": "New user account created",
+    "level": "INFO",
+    "server": "Server-2",
+    "trace_id": "TRX004"
+  },
+  {
+    "timestamp": "2026-02-10T09:10:55",
+    "service": "DatabaseService",
+    "message": "Database connection established",
+    "level": "INFO",
+    "server": "Server-2",
+    "trace_id": "TRX005"
+  },
+  {
+    "timestamp": "2026-02-10T09:13:21",
+    "service": "DatabaseService",
+    "message": "Slow query detected",
+    "level": "WARNING",
+    "server": "Server-2",
+    "trace_id": "TRX006"
+  },
+  {
+    "timestamp": "2026-02-10T09:15:47",
+    "service": "PaymentService",
+    "message": "Payment initiated",
+    "level": "INFO",
+    "server": "Server-3",
+    "trace_id": "TRX007"
+  },
+  {
+    "timestamp": "2026-02-10T09:16:05",
+    "service": "PaymentService",
+    "message": "Payment completed successfully",
+    "level": "INFO",
+    "server": "Server-3",
+    "trace_id": "TRX008"
+  },
+  {
+    "timestamp": "2026-02-10T09:18:44",
+    "service": "PaymentService",
+    "message": "Payment gateway timeout",
+    "level": "ERROR",
+    "server": "Server-3",
+    "trace_id": "TRX009"
+  },
+  {
+    "timestamp": "2026-02-10T09:21:30",
+    "service": "NotificationService",
+    "message": "Email notification sent",
+    "level": "INFO",
+    "server": "Server-4",
+    "trace_id": "TRX010"
+  },
+  {
+    "timestamp": "2026-02-10T09:24:12",
+    "service": "NotificationService",
+    "message": "SMS delivery failed",
+    "level": "ERROR",
+    "server": "Server-4",
+    "trace_id": "TRX011"
+  },
+  {
+    "timestamp": "2026-02-10T09:27:58",
+    "service": "SystemMonitor",
+    "message": "CPU usage exceeded 80%",
+    "level": "WARNING",
+    "server": "Server-5",
+    "trace_id": "TRX012"
+  },
+  {
+    "timestamp": "2026-02-10T09:30:10",
+    "service": "SystemMonitor",
+    "message": "Memory usage normal",
+    "level": "INFO",
+    "server": "Server-5",
+    "trace_id": "TRX013"
+  },
+  {
+    "timestamp": "2026-02-10T09:33:49",
+    "service": "FileService",
+    "message": "File uploaded successfully",
+    "level": "INFO",
+    "server": "Server-2",
+    "trace_id": "TRX014"
+  },
+  {
+    "timestamp": "2026-02-10T09:36:22",
+    "service": "FileService",
+    "message": "File size exceeds limit",
+    "level": "WARNING",
+    "server": "Server-2",
+    "trace_id": "TRX015"
+  },
+  {
+    "timestamp": "2026-02-10T09:38:57",
+    "service": "SecurityService",
+    "message": "Suspicious login detected",
+    "level": "WARNING",
+    "server": "Server-6",
+    "trace_id": "TRX016"
+  },
+  {
+    "timestamp": "2026-02-10T09:40:31",
+    "service": "SecurityService",
+    "message": "IP address blocked",
+    "level": "ERROR",
+    "server": "Server-6",
+    "trace_id": "TRX017"
+  },
+  {
+    "timestamp": "2026-02-10T09:43:18",
+    "service": "CacheService",
+    "message": "Cache cleared successfully",
+    "level": "INFO",
+    "server": "Server-3",
+    "trace_id": "TRX018"
+  },
+  {
+    "timestamp": "2026-02-10T09:46:05",
+    "service": "CacheService",
+    "message": "Cache miss rate increased",
+    "level": "WARNING",
+    "server": "Server-3",
+    "trace_id": "TRX019"
+  },
+  {
+    "timestamp": "2026-02-10T09:50:00",
+    "service": "SchedulerService",
+    "message": "Daily backup completed",
+    "level": "INFO",
+    "server": "Server-7",
+    "trace_id": "TRX020"
+  },
+  {
+    "timestamp": "2026-02-10T12:23:33.956662",
+    "service": "SchedulerService",
+    "level": "INFO",
+    "message": "Daily backup completed",
+    "server": "server-01",
+    "trace_id": "sriram"
+  },
+  {
+    "timestamp": "2026-02-10T12:24:21.230608",
+    "service": "payment",
+    "level": "WARN",
+    "message": "cash",
+    "server": "server-01",
+    "trace_id": "sriram"
+  }
+]
